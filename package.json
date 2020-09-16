@@ -1,0 +1,15 @@
+{
+    "name": "passbook",
+    "version": "0.1.0",
+    "description": "The main entry point to the modules that make up passbook",
+    "main": "build.sh",
+    "scripts": {
+        "build": "build.sh"
+    },
+    "keywords": [],
+    "author": "Monty Dawson <hello@montydawson.co.uk>",
+    "license": "ISC",
+    "devDependencies": {
+        "prettier": "^2.1.2"
+    }
+}
