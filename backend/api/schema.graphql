@@ -1,0 +1,16 @@
+type Mutation {
+    login(email: String!, password: String!): Token!
+}
+
+type Query {
+    token: String!
+}
+
+type Token {
+    jwt: String!
+    refreshToken: String!
+}
+
+type Organisation {
+    id: String!
+}
