@@ -1,5 +1,6 @@
 export interface PaginationOptions {
-    start?: number;
     offset?: number;
     limit: number;
 }
+
+export class SchemaValidationException extends Error {}
