@@ -5,6 +5,7 @@ export enum UserStatus {
     ACTIVE = "ACTIVE",
     EMAIL_VERIFICATION_PENDING = "EMAIL_VERIFICATION_PENDING",
     PASSWORD_FAILED = "PASSWORD_FAILED",
+    PASSWORD_UPDATE_PENDING = "PASSWORD_UPDATE_PENDING",
     LOCKED = "LOCKED",
 }
 
@@ -21,6 +22,7 @@ export interface UserEntity {
 
 export type UserCreate = Omit<UserEntity, "id">;
 export type UserUpdate = { id: string } & Partial<UserEntity>;
+export type AuthenticatedUser = Pick<UserEntity, "id" | "organisation" | "permissions">;
 
 export interface UserRepository {
     count(): Promise<number>;

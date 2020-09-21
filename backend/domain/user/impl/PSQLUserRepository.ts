@@ -15,7 +15,6 @@ class UserModel extends Model<UserEntity, UserCreate> implements UserEntity {
     public permissions!: Permissions;
     public organisation!: string | null;
 
-    // timestamps!
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
 }
@@ -27,7 +26,7 @@ const modelFieldDefs = {
         primaryKey: true,
     },
     status: {
-        type: DataTypes.STRING,
+        type: DataTypes.ENUM(...Object.values(UserStatus)),
         allowNull: false,
     },
     email: {

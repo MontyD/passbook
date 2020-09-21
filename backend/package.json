@@ -4,8 +4,10 @@
     "description": "The API for the passbook application",
     "main": "index.js",
     "scripts": {
-        "api:dev": "npm run api:gen-types && concurrently -k \"graphql-codegen --config codegen.yml --watch\" \"ts-node-dev api/server\"",
-        "api:gen-types": "graphql-codegen --config codegen.yml"
+        "api:dev": "concurrently -k \"npm run api:gen-types-watch\" \"npm run api:server-watch\"",
+        "api:gen-types": "graphql-codegen --config codegen.yml",
+        "api:gen-types-watch": "graphql-codegen --config codegen.yml --watch",
+        "api:server-watch": "ts-node-dev --respawn --exit-child api/server"
     },
     "keywords": [],
     "author": "Monty Dawson <hello@montydawson.co.uk>",
@@ -17,6 +19,7 @@
         "bcrypt": "^5.0.0",
         "graphql": "^15.3.0",
         "joi": "^17.2.1",
+        "jsonwebtoken": "^8.5.1",
         "pg": "^8.3.3",
         "sequelize": "^6.3.5",
         "winston": "^3.3.3"

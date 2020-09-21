@@ -17,6 +17,7 @@ const init = async () => {
     const server = new ApolloServer({
         typeDefs: typeDefSources.map((it) => it.document).filter(Boolean) as DocumentNode[],
         context: createDynamicContext(staticContext),
+        // formatError: ({ originalError }) => {},
         resolvers,
     });
 

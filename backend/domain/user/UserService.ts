@@ -2,11 +2,19 @@ import { Logger } from "winston";
 import { hash } from "bcrypt";
 import Joi from "joi";
 
-import { UserCreate, UserRepository, UserStatus } from "./UserRepository";
-import { allPermissions } from "../auth/Permissions";
+import { UserCreate, AuthenticatedUser, UserRepository, UserStatus } from "./UserRepository";
+import { allPermissions, assertPermission } from "../auth/Permissions";
 
-export class NoSuchUserException extends Error {}
-export class InvalidAuthenticationDetailsException extends Error {}
+export class NoSuchUserException extends Error {
+    constructor(message: string = "") {
+        super(`[NoSuchUserException] ${message}`.trim());
+    }
+}
+export class InvalidAuthenticationDetailsException extends Error {
+    constructor(message: string = "") {
+        super(`[InvalidAuthenticationDetailsException] ${message}`.trim());
+    }
+}
 
 export class UserService {
     private userSchema = Joi.object({
@@ -27,7 +35,9 @@ export class UserService {
 
     private constructor(private readonly userRepo: UserRepository, private readonly log: Logger) {}
 
-    public async createUser(user: UserCreate) {
+    public async createUser(user: UserCreate, creatingUser: AuthenticatedUser) {
+        assertPermission("ADMINISTER_USERS", creatingUser.permissions, user);
+
         const validatedUser: UserCreate = await this.userSchema.validateAsync(user);
         return this.userRepo.createUser(validatedUser);
     }
@@ -48,7 +58,7 @@ export class UserService {
         const numberOfUsers = await this.userRepo.count();
         if (numberOfUsers === 0) {
             this.log.info("No users found at UserService startup, creating default user");
-            await this.createUser({
+            await this.userRepo.createUser({
                 email: "hello@montydawson.co.uk",
                 password: await this.hashPassword("Password123!"),
                 fullName: "Monty Dawson",
