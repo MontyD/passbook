@@ -1,45 +1,12 @@
-import { Model, DataTypes, Sequelize } from "sequelize";
+import { Sequelize } from "sequelize";
 import { Logger } from "winston";
-import {
-    RefreshTokenEntity,
-    RefreshTokenCreate,
-    TokenRepository,
-    NoSuchRefreshTokenException,
-} from "../TokenRepository";
-
-class RefreshTokenModel extends Model<RefreshTokenEntity, RefreshTokenCreate> implements RefreshTokenEntity {
-    public id!: string;
-    public userId!: string;
-    public token!: string;
-    public expires!: number;
-
-    public readonly createdAt!: Date;
-    public readonly updatedAt!: Date;
-}
-
-const modelFieldDefs = {
-    id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
-        primaryKey: true,
-    },
-    userId: {
-        type: DataTypes.UUID,
-        allowNull: false,
-    },
-    token: {
-        type: DataTypes.STRING,
-        allowNull: false,
-    },
-    expires: {
-        type: DataTypes.BIGINT,
-        allowNull: false,
-    },
-} as const;
+import { DescriptiveError } from "../../common";
+import { RefreshTokenCreate, TokenRepository } from "../TokenRepository";
+import { RefreshTokenModel, tokenModelFieldDefs } from "./PSQLTokenModel";
 
 export class PQSLTokenRepository implements TokenRepository {
     public static async init(sequelize: Sequelize, log: Logger) {
-        RefreshTokenModel.init(modelFieldDefs, {
+        RefreshTokenModel.init(tokenModelFieldDefs, {
             sequelize,
             modelName: "Token",
         });
@@ -60,7 +27,11 @@ export class PQSLTokenRepository implements TokenRepository {
     public async deleteRefreshToken(id: string) {
         const numberOfDeleted = await RefreshTokenModel.destroy({ where: { id }, limit: 1 });
         if (numberOfDeleted === 0) {
-            throw new NoSuchRefreshTokenException();
+            throw new DescriptiveError("NO_SUCH_TOKEN", "Token to be deleted not found");
         }
+    }
+
+    public async deleteRefreshTokensForUser(userId: string) {
+        await RefreshTokenModel.destroy({ where: { userId } });
     }
 }

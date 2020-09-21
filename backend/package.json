@@ -7,7 +7,7 @@
         "api:dev": "concurrently -k \"npm run api:gen-types-watch\" \"npm run api:server-watch\"",
         "api:gen-types": "graphql-codegen --config codegen.yml",
         "api:gen-types-watch": "graphql-codegen --config codegen.yml --watch",
-        "api:server-watch": "ts-node-dev --respawn --exit-child api/server"
+        "api:server-watch": "ts-node-dev --respawn api/server --ignore-watch node_modules"
     },
     "keywords": [],
     "author": "Monty Dawson <hello@montydawson.co.uk>",
@@ -30,6 +30,7 @@
         "@graphql-codegen/typescript": "1.17.8",
         "@graphql-codegen/typescript-resolvers": "1.17.8",
         "@types/bcrypt": "^3.0.0",
+        "@types/express": "^4.17.8",
         "@types/pg": "^7.14.5",
         "concurrently": "^5.3.0",
         "ts-node-dev": "^1.0.0-pre.62",

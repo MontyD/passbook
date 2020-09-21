@@ -1,63 +1,12 @@
-import { Model, DataTypes, Sequelize } from "sequelize";
+import { Sequelize } from "sequelize";
 import { Logger } from "winston";
-import { Permissions } from "../../auth/Permissions";
-import { PaginationOptions } from "../../common";
-import { UserCreate, UserEntity, UserRepository, UserStatus, UserUpdate } from "../UserRepository";
-import { NoSuchUserException } from "../UserService";
-
-class UserModel extends Model<UserEntity, UserCreate> implements UserEntity {
-    public id!: string;
-    public status!: UserStatus;
-    public email!: string;
-    public password!: string;
-    public fullName!: string;
-    public shortName!: string;
-    public permissions!: Permissions;
-    public organisation!: string | null;
-
-    public readonly createdAt!: Date;
-    public readonly updatedAt!: Date;
-}
-
-const modelFieldDefs = {
-    id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
-        primaryKey: true,
-    },
-    status: {
-        type: DataTypes.ENUM(...Object.values(UserStatus)),
-        allowNull: false,
-    },
-    email: {
-        type: DataTypes.STRING,
-        allowNull: false,
-    },
-    password: {
-        type: DataTypes.STRING,
-        allowNull: false,
-    },
-    fullName: {
-        type: DataTypes.STRING,
-        allowNull: false,
-    },
-    shortName: {
-        type: DataTypes.STRING,
-        allowNull: false,
-    },
-    permissions: {
-        type: DataTypes.JSON,
-        allowNull: false,
-    },
-    organisation: {
-        type: DataTypes.UUID,
-        allowNull: true,
-    },
-} as const;
+import { DescriptiveError, PaginationOptions } from "../../common";
+import { UserCreate, UserEntity, UserRepository, UserUpdate } from "../UserRepository";
+import { UserModel, userModelFieldDefs } from "./PSQLUserModel";
 
 export class PQSLUserRepository implements UserRepository {
     public static async init(sequelize: Sequelize, log: Logger) {
-        UserModel.init(modelFieldDefs, {
+        UserModel.init(userModelFieldDefs, {
             sequelize,
             modelName: "User",
         });
@@ -78,7 +27,7 @@ export class PQSLUserRepository implements UserRepository {
     public async updateUser({ id, ...fieldsToUpdate }: UserUpdate) {
         const [_, updatedRecords] = await UserModel.update(fieldsToUpdate, { where: { id }, returning: true });
         if (updatedRecords.length === 0) {
-            throw new NoSuchUserException();
+            throw new DescriptiveError("NO_SUCH_USER", "User could not be found");
         }
         return updatedRecords[0];
     }
@@ -86,7 +35,7 @@ export class PQSLUserRepository implements UserRepository {
     public async deleteUser(id: string) {
         const numberOfDeleted = await UserModel.destroy({ where: { id }, limit: 1 });
         if (numberOfDeleted === 0) {
-            throw new NoSuchUserException();
+            throw new DescriptiveError("NO_SUCH_USER", "User to delete could not be found");
         }
     }
 

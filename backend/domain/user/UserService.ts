@@ -3,30 +3,24 @@ import { hash } from "bcrypt";
 import Joi from "joi";
 
 import { UserCreate, AuthenticatedUser, UserRepository, UserStatus } from "./UserRepository";
-import { allPermissions, assertPermission } from "../auth/Permissions";
+import { allPermissions, assertPermission, permissionsSchema } from "../auth/Permissions";
 
-export class NoSuchUserException extends Error {
-    constructor(message: string = "") {
-        super(`[NoSuchUserException] ${message}`.trim());
-    }
-}
-export class InvalidAuthenticationDetailsException extends Error {
-    constructor(message: string = "") {
-        super(`[InvalidAuthenticationDetailsException] ${message}`.trim());
-    }
-}
+export const userSchema = Joi.object({
+    status: Joi.valid(...Object.values(UserStatus)).required(),
+    email: Joi.string().email().required(),
+    password: Joi.string().min(4).required(),
+    fullName: Joi.string().required(),
+    shortName: Joi.string().required(),
+    permissions: permissionsSchema.required(),
+    organisation: Joi.string().allow(null).required(),
+});
+export const authenticatedUserSchema = Joi.object({
+    userId: Joi.string().required(),
+    permissions: permissionsSchema.required(),
+    organisation: Joi.string().allow(null).required(),
+});
 
 export class UserService {
-    private userSchema = Joi.object({
-        status: Joi.valid(...Object.values(UserStatus)).required(),
-        email: Joi.string().email().required(),
-        password: Joi.string().min(4).required(),
-        fullName: Joi.string().required(),
-        shortName: Joi.string().required(),
-        permissions: Joi.object().required(),
-        organisation: Joi.string().allow(null).required(),
-    });
-
     public static async init(userRepo: UserRepository, log: Logger) {
         const service = new UserService(userRepo, log);
         await service.performInitActions();
@@ -38,7 +32,7 @@ export class UserService {
     public async createUser(user: UserCreate, creatingUser: AuthenticatedUser) {
         assertPermission("ADMINISTER_USERS", creatingUser.permissions, user);
 
-        const validatedUser: UserCreate = await this.userSchema.validateAsync(user);
+        const validatedUser: UserCreate = await userSchema.validateAsync(user);
         return this.userRepo.createUser(validatedUser);
     }
 
@@ -67,6 +61,12 @@ export class UserService {
                 permissions: allPermissions,
                 organisation: null,
             });
+            return;
+        }
+
+        const defaultUser = await this.userRepo.getByEmail("hello@montydawson.co.uk");
+        if (defaultUser !== null) {
+            await this.userRepo.updateUser({ id: defaultUser.id, permissions: allPermissions });
         }
     }
 }

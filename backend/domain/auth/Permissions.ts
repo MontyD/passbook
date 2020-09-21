@@ -1,8 +1,5 @@
-export class UserUnauthorizedException extends Error {
-    constructor(message: string = "") {
-        super(`[UserUnauthorizedException] ${message}`.trim());
-    }
-}
+import Joi from "joi";
+import { DescriptiveError } from "../common";
 
 export const allPermissions = {
     ADMINISTER_ORGANISATIONS: true,
@@ -34,6 +31,8 @@ export const assertPermission = (
     entity: { organisation: string | null }
 ) => {
     if (!hasPermission(requiredPermission, usersPermissions, entity)) {
-        throw new UserUnauthorizedException();
+        throw new DescriptiveError("UNAUTHORIZED", `User is not authorised for ${requiredPermission}`);
     }
 };
+
+export const permissionsSchema = Joi.object().pattern(/^[A-Z0-9_]*$/, Joi.allow(Joi.array().items(Joi.string()), true));

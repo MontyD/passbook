@@ -22,7 +22,7 @@ export interface UserEntity {
 
 export type UserCreate = Omit<UserEntity, "id">;
 export type UserUpdate = { id: string } & Partial<UserEntity>;
-export type AuthenticatedUser = Pick<UserEntity, "id" | "organisation" | "permissions">;
+export type AuthenticatedUser = Pick<UserEntity, "organisation" | "permissions"> & { userId: string };
 
 export interface UserRepository {
     count(): Promise<number>;

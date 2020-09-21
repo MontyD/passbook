@@ -1,12 +1,14 @@
 import { createLogger, format, Logger, transports } from "winston";
-import { Request } from "apollo-server";
+import { Request } from "express";
 import { promises as fsp } from "fs";
+
 import { authSecretFileLocation, logLevel } from "../consts";
 import { UserService } from "../domain/user/UserService";
 import { PQSLUserRepository } from "../domain/user/impl/PSQLUserRepository";
 import { createSequlizeInstance } from "./db";
 import { AuthService } from "../domain/auth/AuthService";
 import { PQSLTokenRepository } from "../domain/auth/impl/PSQLTokenRepository";
+import { AuthenticatedUser } from "../domain/user/UserRepository";
 
 export type StaticContext = Readonly<{
     log: Logger;
@@ -14,13 +16,14 @@ export type StaticContext = Readonly<{
     authService: AuthService;
 }>;
 
-export type Context = StaticContext & {};
+export type Context = StaticContext & {
+    user?: AuthenticatedUser;
+};
 
 export const createStaticContext = async (): Promise<StaticContext> => {
     const log = createLogger({
         level: logLevel,
         format: format.json(),
-        defaultMeta: { service: "api-server" },
         transports: [new transports.Console()],
     });
 
@@ -40,8 +43,21 @@ export const createStaticContext = async (): Promise<StaticContext> => {
     } as const;
 };
 
-export const createDynamicContext = (staticContext: StaticContext) => (request: Request) => {
+const extractUserFromRequest = async ({ headers }: Request, authService: AuthService) => {
+    const [_, jwtToken] = headers?.authorization?.split("Bearer ") ?? [];
+    if (jwtToken) {
+        return authService.verifyUserFromJWT(jwtToken);
+    }
+};
+
+export const createDynamicContext = (staticContext: StaticContext) => async ({
+    req,
+}: {
+    req: Request;
+}): Promise<Context> => {
+    const user = await extractUserFromRequest(req, staticContext.authService);
     return {
         ...staticContext,
+        user,
     };
 };

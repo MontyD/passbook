@@ -3,8 +3,8 @@ export interface PaginationOptions {
     limit: number;
 }
 
-export class SchemaValidationException extends Error {
-    constructor(message: string = "") {
-        super(`[SchemaValidationException] ${message}`.trim());
+export class DescriptiveError extends Error {
+    constructor(code: string, message: string) {
+        super(`[${code}] ${message}`);
     }
 }

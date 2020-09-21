@@ -1,19 +1,14 @@
 import { Logger } from "winston";
 import { compare } from "bcrypt";
-import { sign } from "jsonwebtoken";
+import { sign, verify } from "jsonwebtoken";
 import { createHash } from "crypto";
-import { UserEntity, UserRepository } from "../user/UserRepository";
-import { NoSuchUserException } from "../user/UserService";
+import { AuthenticatedUser, UserEntity, UserRepository } from "../user/UserRepository";
+import { authenticatedUserSchema } from "../user/UserService";
 import { RefreshTokenCreate, TokenRepository } from "./TokenRepository";
 import { jwtTokenExpiryLength, refreshTokenExpiryLength } from "../../consts";
+import { DescriptiveError } from "../common";
 
 const issuer = "passbook-auth";
-
-export class InvalidPasswordException extends Error {
-    constructor(message: string = "") {
-        super(`[InvalidPasswordException] ${message}`.trim());
-    }
-}
 
 export class AuthService {
     public static async init(userRepo: UserRepository, tokenRepo: TokenRepository, authSecret: string, log: Logger) {
@@ -30,11 +25,54 @@ export class AuthService {
     public async login(email: string, password: string) {
         const user = await this.userRepo.getByEmail(email);
         if (user === null) {
-            throw new NoSuchUserException();
+            throw new DescriptiveError("NO_SUCH_USER", "User does not exist");
         }
         if (!(await compare(password, user.password))) {
-            throw new InvalidPasswordException();
+            throw new DescriptiveError("INVALID_PASSWORD", "Password incorrect");
         }
+        await this.tokenRepo.deleteRefreshTokensForUser(user.id);
+        return this.generateTokenPayload(user);
+    }
+
+    public async verifyUserFromJWT(token: string): Promise<AuthenticatedUser> {
+        const decoded = verify(token, this.authSecret, { issuer });
+        if (typeof decoded === "string") {
+            throw new DescriptiveError("INVALID_TOKEN", "Auth token not valid");
+        }
+        const { userId, organisation, permissions } = decoded as Partial<AuthenticatedUser>;
+        return authenticatedUserSchema.validateAsync({ userId, organisation, permissions });
+    }
+
+    public async refresh(refreshId: string, refreshToken: string) {
+        const token = await this.tokenRepo.getRefreshToken(refreshId);
+        if (!token || token.expires < Date.now() || token.token !== refreshToken) {
+            throw new DescriptiveError("INVALID_REFRESH_TOKEN", "Refresh token not valid");
+        }
+
+        const user = await this.userRepo.getById(token.userId);
+        if (!user) {
+            throw new DescriptiveError("INVALID_REFRESH_TOKEN", "Refresh token not linked to a user");
+        }
+        await this.tokenRepo.deleteRefreshTokensForUser(user.id);
+        return this.generateTokenPayload(user);
+    }
+
+    private generateJWT({ id: userId, permissions, organisation }: UserEntity) {
+        return sign({ userId, permissions, organisation }, this.authSecret, {
+            expiresIn: jwtTokenExpiryLength / 1000,
+            issuer,
+        });
+    }
+
+    private generateRefreshToken({ id: userId }: UserEntity): RefreshTokenCreate {
+        return {
+            userId,
+            token: createHash("sha1").update(`${Date.now()}${Math.random()}`).digest("hex"),
+            expires: Date.now() + refreshTokenExpiryLength,
+        };
+    }
+
+    private async generateTokenPayload(user: UserEntity) {
         const jwt = this.generateJWT(user);
         const refreshToken = await this.tokenRepo.createRefreshToken(this.generateRefreshToken(user));
         return {
@@ -44,18 +82,6 @@ export class AuthService {
                 token: refreshToken.token,
             },
             jwtExpiresIn: jwtTokenExpiryLength,
-        };
-    }
-
-    private generateJWT({ id: userId, permissions }: UserEntity) {
-        return sign({ userId, permissions }, this.authSecret, { expiresIn: jwtTokenExpiryLength / 1000, issuer });
-    }
-
-    private generateRefreshToken({ id: userId }: UserEntity): RefreshTokenCreate {
-        return {
-            userId,
-            token: createHash("sha1").update(`${Date.now()}${Math.random()}`).digest("hex"),
-            expires: Date.now() + refreshTokenExpiryLength,
         };
     }
 }

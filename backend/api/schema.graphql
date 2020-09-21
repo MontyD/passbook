@@ -1,5 +1,6 @@
 type Mutation {
     login(email: String!, password: String!): Token!
+    refreshToken(refreshId: String!, refreshToken: String!): Token!
 }
 
 type Query {
