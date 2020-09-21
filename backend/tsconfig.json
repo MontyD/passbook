@@ -8,14 +8,14 @@
         "forceConsistentCasingInFileNames": true,
         "lib": ["dom", "dom.iterable", "esnext"],
         "allowJs": true,
-        "noEmit": true,
         "moduleResolution": "node",
         "resolveJsonModule": true,
         "isolatedModules": true,
-        "jsx": "preserve"
+        "sourceMap": true,
+        "outDir": "dist"
     },
     "$schema": "https://json.schemastore.org/tsconfig",
+    "include": ["**/*.ts"],
     "display": "Recommended",
-    "exclude": ["node_modules"],
-    "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"]
+    "exclude": ["node_modules"]
 }
