@@ -7,6 +7,8 @@ import { GraphQLFileLoader } from "@graphql-tools/graphql-file-loader";
 import { port } from "../consts";
 import { resolvers } from "./resolvers";
 import { createDynamicContext, createStaticContext } from "./context";
+import { DescriptiveError } from "../domain/common";
+import { loggingPlugin } from "./logger";
 
 const init = async () => {
     const typeDefSources = await loadTypedefs(join(__dirname, "schema.graphql"), {
@@ -17,7 +19,13 @@ const init = async () => {
     const server = new ApolloServer({
         typeDefs: typeDefSources.map((it) => it.document).filter(Boolean) as DocumentNode[],
         context: createDynamicContext(staticContext),
-        // formatError: ({ originalError }) => {},
+        formatError: ({ originalError, ...existingErrorDescription }) => {
+            if (originalError instanceof DescriptiveError) {
+                return { message: originalError.message, extensions: {} };
+            }
+            return existingErrorDescription;
+        },
+        plugins: [loggingPlugin(staticContext.log.child({ service: "Apollo-Server" }))],
         resolvers,
     });
 

@@ -34,13 +34,23 @@ export class AuthService {
         return this.generateTokenPayload(user);
     }
 
-    public async verifyUserFromJWT(token: string): Promise<AuthenticatedUser> {
-        const decoded = verify(token, this.authSecret, { issuer });
-        if (typeof decoded === "string") {
-            throw new DescriptiveError("INVALID_TOKEN", "Auth token not valid");
+    public async verifyUserFromJWT(token: string): Promise<AuthenticatedUser | undefined> {
+        let decoded: string | object | null = null;
+        try {
+            decoded = verify(token, this.authSecret, { issuer });
+        } catch (e) {
+            this.log.warn(`Token decode failed with: ${e.message}`);
+        }
+        if (!decoded || typeof decoded === "string") {
+            return;
         }
         const { userId, organisation, permissions } = decoded as Partial<AuthenticatedUser>;
-        return authenticatedUserSchema.validateAsync({ userId, organisation, permissions });
+        try {
+            return await authenticatedUserSchema.validateAsync({ userId, organisation, permissions });
+        } catch (e) {
+            this.log.warn(`Token validation failed with: ${e.message}`);
+            return;
+        }
     }
 
     public async refresh(refreshId: string, refreshToken: string) {
