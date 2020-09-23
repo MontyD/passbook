@@ -3,7 +3,7 @@ import { hash } from "bcrypt";
 import Joi from "joi";
 
 import { UserCreate, AuthenticatedUser, UserRepository, UserStatus } from "./UserRepository";
-import { allPermissions, assertPermission, permissionsSchema } from "../auth/Permissions";
+import { allPermissions, assertPermission, permissionsSchema, requiresPermission } from "../auth/Permissions";
 
 export const userSchema = Joi.object({
     status: Joi.valid(...Object.values(UserStatus)).required(),
@@ -29,11 +29,10 @@ export class UserService {
 
     private constructor(private readonly userRepo: UserRepository, private readonly log: Logger) {}
 
+    @requiresPermission("ADMINISTER_USERS")
     public async createUser(user: UserCreate, creatingUser: AuthenticatedUser) {
-        assertPermission("ADMINISTER_USERS", creatingUser.permissions, user);
-
         const validatedUser: UserCreate = await userSchema.validateAsync(user);
-        return this.userRepo.createUser(validatedUser);
+        return this.userRepo.create(validatedUser);
     }
 
     private hashPassword(password: string) {
@@ -52,7 +51,7 @@ export class UserService {
         const numberOfUsers = await this.userRepo.count();
         if (numberOfUsers === 0) {
             this.log.info("No users found at UserService startup, creating default user");
-            await this.userRepo.createUser({
+            await this.userRepo.create({
                 email: "hello@montydawson.co.uk",
                 password: await this.hashPassword("Password123!"),
                 fullName: "Monty Dawson",
@@ -66,7 +65,7 @@ export class UserService {
 
         const defaultUser = await this.userRepo.getByEmail("hello@montydawson.co.uk");
         if (defaultUser !== null) {
-            await this.userRepo.updateUser({ id: defaultUser.id, permissions: allPermissions });
+            await this.userRepo.update({ id: defaultUser.id, permissions: allPermissions });
         }
     }
 }

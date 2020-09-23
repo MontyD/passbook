@@ -9,11 +9,14 @@ import { createSequlizeInstance } from "./db";
 import { AuthService } from "../domain/auth/AuthService";
 import { PQSLTokenRepository } from "../domain/auth/impl/PSQLTokenRepository";
 import { AuthenticatedUser } from "../domain/user/UserRepository";
+import { PQSLOrganisationRepository } from "../domain/organisation/impl/PSQLOrganisationRepository";
+import { OrganisationService } from "../domain/organisation/OrganisationService";
 
 export type StaticContext = Readonly<{
     log: Logger;
     userService: UserService;
     authService: AuthService;
+    orgService: OrganisationService;
 }>;
 
 export type Context = StaticContext & {
@@ -30,17 +33,20 @@ export const createStaticContext = async (): Promise<StaticContext> => {
     const sequelize = await createSequlizeInstance();
     const authSecret = await fsp.readFile(authSecretFileLocation, "utf-8");
 
+    const organisationRepo = await PQSLOrganisationRepository.init(sequelize, log.child({ service: "PSQL-Org-Repo" }));
     const userRepo = await PQSLUserRepository.init(sequelize, log.child({ service: "PSQL-User-Repo" }));
     const tokenRepo = await PQSLTokenRepository.init(sequelize, log.child({ service: "PSQL-Token-Repo" }));
 
-    const userService = await UserService.init(userRepo, log.child({ service: "User-Service" }));
-    const authService = await AuthService.init(userRepo, tokenRepo, authSecret, log.child({ service: "Auth-Service" }));
+    await organisationRepo.initAssociations();
+    await userRepo.initAssociations();
+    await tokenRepo.initAssociations();
 
     return {
         log,
-        userService,
-        authService,
-    } as const;
+        userService: await UserService.init(userRepo, log.child({ service: "User-Service" })),
+        authService: await AuthService.init(userRepo, tokenRepo, authSecret, log.child({ service: "Auth-Service" })),
+        orgService: await OrganisationService.init(organisationRepo, log.child({ service: "Org-Service" })),
+    };
 };
 
 const extractUserFromRequest = async ({ headers }: Request, authService: AuthService) => {

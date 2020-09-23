@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { DescriptiveError } from "../common";
+import { DescriptiveError } from "../common/errors";
 
 export const allPermissions = {
     ADMINISTER_ORGANISATIONS: true,
@@ -36,3 +36,17 @@ export const assertPermission = (
 };
 
 export const permissionsSchema = Joi.object().pattern(/^[A-Z0-9_]*$/, Joi.allow(Joi.array().items(Joi.string()), true));
+
+export const requiresPermission = (
+    permission: AvailablePermissions,
+    { entityGetter, userGetter } = {
+        entityGetter: (args: any[]) => args[args.length - 2],
+        userGetter: (args: any[]) => args[args.length - 1],
+    }
+) => (target: any, propertyKey: string, descriptor: TypedPropertyDescriptor<(...args: any[]) => any>) => {
+    const original = descriptor.value;
+    descriptor.value = (...args: any[]) => {
+        assertPermission(permission, entityGetter(args), userGetter(args));
+        return original?.apply(target, args);
+    };
+};

@@ -1,5 +1,5 @@
 import { Permissions } from "../auth/Permissions";
-import { PaginationOptions } from "../common";
+import { Repository } from "../common/repository";
 
 export enum UserStatus {
     ACTIVE = "ACTIVE",
@@ -24,17 +24,6 @@ export type UserCreate = Omit<UserEntity, "id">;
 export type UserUpdate = { id: string } & Partial<UserEntity>;
 export type AuthenticatedUser = Pick<UserEntity, "organisation" | "permissions"> & { userId: string };
 
-export interface UserRepository {
-    count(): Promise<number>;
-    getById(id: string): Promise<UserEntity | null>;
+export interface UserRepository extends Repository<UserEntity, UserCreate, UserUpdate> {
     getByEmail(email: string): Promise<UserEntity | null>;
-    getByOrganisation(
-        organisation: string,
-        paginationOptions: PaginationOptions,
-        fields?: Array<keyof UserEntity>
-    ): Promise<UserEntity[]>;
-
-    createUser(user: UserCreate): Promise<UserEntity>;
-    updateUser(user: { id: string } & Partial<UserEntity>): Promise<UserEntity>;
-    deleteUser(userId: string): Promise<void>;
 }

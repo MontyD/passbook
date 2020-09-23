@@ -7,7 +7,7 @@ import { GraphQLFileLoader } from "@graphql-tools/graphql-file-loader";
 import { port } from "../consts";
 import { resolvers } from "./resolvers";
 import { createDynamicContext, createStaticContext } from "./context";
-import { DescriptiveError } from "../domain/common";
+import { DescriptiveError } from "../domain/common/errors";
 import { loggingPlugin } from "./logger";
 
 const init = async () => {
@@ -21,7 +21,7 @@ const init = async () => {
         context: createDynamicContext(staticContext),
         formatError: ({ originalError, ...existingErrorDescription }) => {
             if (originalError instanceof DescriptiveError) {
-                return { message: originalError.message, extensions: {} };
+                return { message: originalError.message, extensions: { code: originalError.code } };
             }
             return existingErrorDescription;
         },

@@ -1,3 +1,5 @@
+import { Repository } from "../common/repository";
+
 export interface RefreshTokenEntity {
     id: string;
     userId: string;
@@ -6,9 +8,6 @@ export interface RefreshTokenEntity {
 }
 export type RefreshTokenCreate = Omit<RefreshTokenEntity, "id">;
 
-export interface TokenRepository {
-    createRefreshToken(token: RefreshTokenCreate): Promise<RefreshTokenEntity>;
-    getRefreshToken(id: string): Promise<RefreshTokenEntity | null>;
-    deleteRefreshToken(id: string): Promise<void>;
+export interface TokenRepository extends Repository<RefreshTokenEntity, RefreshTokenCreate, { id: string }> {
     deleteRefreshTokensForUser(userId: string): Promise<void>;
 }

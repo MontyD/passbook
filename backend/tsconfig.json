@@ -12,7 +12,8 @@
         "resolveJsonModule": true,
         "isolatedModules": true,
         "sourceMap": true,
-        "outDir": "dist"
+        "outDir": "dist",
+        "experimentalDecorators": true
     },
     "$schema": "https://json.schemastore.org/tsconfig",
     "include": ["**/*.ts"],

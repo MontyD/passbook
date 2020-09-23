@@ -6,7 +6,7 @@ import { AuthenticatedUser, UserEntity, UserRepository } from "../user/UserRepos
 import { authenticatedUserSchema } from "../user/UserService";
 import { RefreshTokenCreate, TokenRepository } from "./TokenRepository";
 import { jwtTokenExpiryLength, refreshTokenExpiryLength } from "../../consts";
-import { DescriptiveError } from "../common";
+import { DescriptiveError } from "../common/errors";
 
 const issuer = "passbook-auth";
 
@@ -54,7 +54,7 @@ export class AuthService {
     }
 
     public async refresh(refreshId: string, refreshToken: string) {
-        const token = await this.tokenRepo.getRefreshToken(refreshId);
+        const token = await this.tokenRepo.getById(refreshId);
         if (!token || token.expires < Date.now() || token.token !== refreshToken) {
             throw new DescriptiveError("INVALID_REFRESH_TOKEN", "Refresh token not valid");
         }
@@ -84,7 +84,7 @@ export class AuthService {
 
     private async generateTokenPayload(user: UserEntity) {
         const jwt = this.generateJWT(user);
-        const refreshToken = await this.tokenRepo.createRefreshToken(this.generateRefreshToken(user));
+        const refreshToken = await this.tokenRepo.create(this.generateRefreshToken(user));
         return {
             jwt,
             refreshToken: {
