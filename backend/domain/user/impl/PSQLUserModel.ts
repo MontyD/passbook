@@ -10,7 +10,7 @@ export class UserModel extends Model<UserEntity, UserCreate> implements UserEnti
     public fullName!: string;
     public shortName!: string;
     public permissions!: Permissions;
-    public organisation!: string | null;
+    public organisation?: string;
 
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;

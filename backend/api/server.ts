@@ -21,7 +21,10 @@ const init = async () => {
         context: createDynamicContext(staticContext),
         formatError: ({ originalError, ...existingErrorDescription }) => {
             if (originalError instanceof DescriptiveError) {
-                return { message: originalError.message, extensions: { code: originalError.code } };
+                return {
+                    message: originalError.message,
+                    extensions: { code: originalError.code, paths: originalError.paths },
+                };
             }
             return existingErrorDescription;
         },

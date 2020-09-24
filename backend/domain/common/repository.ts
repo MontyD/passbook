@@ -15,7 +15,7 @@ export interface Repository<
 > {
     getById(id: string): Promise<T | null>;
     get(
-        query: Partial<T>,
+        query: { [key in keyof T]?: T[key] | Array<T[key]> },
         paginationOptions: PaginationOptions,
         fields?: ReadonlyArray<keyof T>
     ): Promise<Paginated<T>>;

@@ -1,23 +1,73 @@
 type Mutation {
     login(email: String!, password: String!): Token!
-    refreshToken(refreshId: String!, refreshToken: String!): Token!
+    refreshToken(refreshId: ID!, refreshToken: String!): Token!
+
+    createUser(userCreate: UserCreate!): User!
 }
 
 type Query {
-    token: String!
+    listUsers(limit: Int!, offset: Int): UserList!
 }
 
 type Token {
     jwt: String!
     jwtExpiresIn: Int!
     refreshToken: RefreshToken!
+    user: User!
 }
 
 type RefreshToken {
-    id: String!
+    id: ID!
     token: String!
 }
 
-type Organisation {
-    id: String!
+enum UserStatus {
+    ACTIVE
+    EMAIL_VERIFICATION_PENDING
+    PASSWORD_FAILED
+    PASSWORD_UPDATE_PENDING
+    LOCKED
+}
+
+enum AvailablePermissions {
+    ADMINISTER_ORGANISATIONS
+    ADMINISTER_LOCATIONS
+    ADMINISTER_USERS
+}
+
+type Permission {
+    name: AvailablePermissions!
+    all: Boolean
+    organisation: String
+}
+
+input PermissionCreate {
+    name: AvailablePermissions!
+    all: Boolean
+    organisation: String
+}
+
+type User {
+    id: ID!
+    status: UserStatus!
+    email: String!
+    fullName: String!
+    shortName: String!
+    permissions: [Permission]!
+    organisation: ID
+}
+
+input UserCreate {
+    status: UserStatus!
+    email: String!
+    fullName: String!
+    shortName: String!
+    password: String!
+    permissions: [PermissionCreate!]!
+    organisation: ID
+}
+
+type UserList {
+    total: Int!
+    data: [User!]!
 }

@@ -7,6 +7,7 @@ import {
     UpdateOptions,
     DestroyOptions,
     FindOptions,
+    UniqueConstraintError,
 } from "sequelize";
 import { Logger } from "winston";
 import { PaginationOptions, Repository } from "../repository";
@@ -43,8 +44,20 @@ export const createPSQLRepository = <
             return EntityClass.count({ where });
         }
 
-        public create(entityToCreate: TCreate) {
-            return EntityClass.create(entityToCreate);
+        public async create(entityToCreate: TCreate) {
+            try {
+                return await EntityClass.create(entityToCreate);
+            } catch (e) {
+                if (e instanceof UniqueConstraintError) {
+                    throw new DescriptiveError(
+                        "UNIQUE_VALIDATION_ERROR",
+                        e.errors.map((it) => it.message).join(", "),
+                        e.errors.map((it) => it.path)
+                    );
+                }
+                console.log(e);
+                throw e;
+            }
         }
 
         public async update({ id, ...fieldsToUpdate }: TUpdate) {

@@ -18,6 +18,11 @@ export class PQSLUserRepository extends BasePQSLUserRepository implements UserRe
     getByEmail(email: string) {
         return UserModel.findOne({ where: { email } });
     }
+    async getByOrganisations(organisations: string[]) {
+        const where = { organisation: organisations };
+        const [total, data] = await Promise.all([UserModel.count({ where }), UserModel.findAll({ where })]);
+        return { total, data };
+    }
     async initAssociations() {
         UserModel.belongsTo(OrganisationModel, { foreignKey: "organisation", targetKey: "id" });
         await UserModel.sync();

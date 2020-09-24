@@ -1,52 +1,74 @@
 import Joi from "joi";
 import { DescriptiveError } from "../common/errors";
 
-export const allPermissions = {
-    ADMINISTER_ORGANISATIONS: true,
-    ADMINISTER_LOCATIONS: true,
-    ADMINISTER_USERS: true,
-} as const;
-
-export type AvailablePermissions = keyof typeof allPermissions;
-export type Permissions = { [key in AvailablePermissions]?: true | string[] };
+export enum AvailablePermissions {
+    ADMINISTER_ORGANISATIONS = "ADMINISTER_ORGANISATIONS",
+    ADMINISTER_LOCATIONS = "ADMINISTER_LOCATIONS",
+    ADMINISTER_USERS = "ADMINISTER_USERS",
+}
+export type Permission = {
+    name: AvailablePermissions;
+    all?: boolean;
+    organisations?: string[];
+};
+export type Permissions = Permission[];
+export const allPermissions: Permissions = Object.values(AvailablePermissions).map((name) => ({ name, all: true }));
 
 export const hasPermission = (
     requiredPermission: AvailablePermissions,
-    usersPermission: Permissions,
-    entity: { organisation: string | null }
+    entity?: { organisation: string | null },
+    usersPermission?: Permissions
 ) => {
-    const permissionInfo = usersPermission[requiredPermission];
-    if (permissionInfo === true) {
-        return true;
-    }
-    if (Array.isArray(permissionInfo) && entity.organisation !== null) {
-        return permissionInfo.includes(entity.organisation);
+    const permissionInfo = usersPermission?.find?.((it) => it.name === requiredPermission);
+    if (!permissionInfo) return false;
+    if (permissionInfo.all) return true;
+    if (!entity) return true;
+    if (entity.organisation) {
+        return permissionInfo.organisations?.includes?.(entity.organisation);
     }
     return false;
 };
 
+export const getPermission = (requiredPermission: AvailablePermissions, userPermissions: Permissions) => {
+    const permission = userPermissions.find((it) => it.name === requiredPermission);
+    if (!permission) {
+        throw new DescriptiveError("INVALID_PERMISSION", "Unable to find relevant permission");
+    }
+    return permission;
+};
+
 export const assertPermission = (
     requiredPermission: AvailablePermissions,
-    usersPermissions: Permissions,
-    entity: { organisation: string | null }
+    entity: { organisation: string | null },
+    usersPermissions?: Permissions
 ) => {
-    if (!hasPermission(requiredPermission, usersPermissions, entity)) {
+    if (!hasPermission(requiredPermission, entity, usersPermissions)) {
         throw new DescriptiveError("UNAUTHORIZED", `User is not authorised for ${requiredPermission}`);
     }
 };
 
-export const permissionsSchema = Joi.object().pattern(/^[A-Z0-9_]*$/, Joi.allow(Joi.array().items(Joi.string()), true));
+export const permissionsSchema = Joi.array().items(
+    Joi.object({
+        name: Joi.valid(...Object.values(AvailablePermissions)).required(),
+        all: Joi.bool(),
+        organisation: Joi.string(),
+    })
+);
 
-export const requiresPermission = (
+export function requiresPermission(
+    this: any,
     permission: AvailablePermissions,
     { entityGetter, userGetter } = {
-        entityGetter: (args: any[]) => args[args.length - 2],
         userGetter: (args: any[]) => args[args.length - 1],
+        entityGetter: (args: any[]) => args[args.length - 2],
     }
-) => (target: any, propertyKey: string, descriptor: TypedPropertyDescriptor<(...args: any[]) => any>) => {
-    const original = descriptor.value;
-    descriptor.value = (...args: any[]) => {
-        assertPermission(permission, entityGetter(args), userGetter(args));
-        return original?.apply(target, args);
+) {
+    return function (target: any, propertyKey: string, descriptor: TypedPropertyDescriptor<(...args: any[]) => any>) {
+        const original = descriptor.value;
+        descriptor.value = function (...args: any[]) {
+            console.log(args);
+            assertPermission(permission, entityGetter(args), userGetter(args)?.permissions);
+            return original?.apply(this, args);
+        };
     };
-};
+}

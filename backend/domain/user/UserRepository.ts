@@ -1,5 +1,5 @@
 import { Permissions } from "../auth/Permissions";
-import { Repository } from "../common/repository";
+import { Repository, Paginated } from "../common/repository";
 
 export enum UserStatus {
     ACTIVE = "ACTIVE",
@@ -17,7 +17,7 @@ export interface UserEntity {
     fullName: string;
     shortName: string;
     permissions: Permissions;
-    organisation: string | null;
+    organisation?: string;
 }
 
 export type UserCreate = Omit<UserEntity, "id">;

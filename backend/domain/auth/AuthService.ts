@@ -87,6 +87,7 @@ export class AuthService {
         const refreshToken = await this.tokenRepo.create(this.generateRefreshToken(user));
         return {
             jwt,
+            user,
             refreshToken: {
                 id: refreshToken.id,
                 token: refreshToken.token,
