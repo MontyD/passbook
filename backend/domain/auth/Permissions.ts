@@ -66,7 +66,6 @@ export function requiresPermission(
     return function (target: any, propertyKey: string, descriptor: TypedPropertyDescriptor<(...args: any[]) => any>) {
         const original = descriptor.value;
         descriptor.value = function (...args: any[]) {
-            console.log(args);
             assertPermission(permission, entityGetter(args), userGetter(args)?.permissions);
             return original?.apply(this, args);
         };

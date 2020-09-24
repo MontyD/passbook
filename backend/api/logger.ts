@@ -14,7 +14,9 @@ export const loggingPlugin = (log: Logger) => ({
 
         return {
             didEncounterErrors({ errors }: { errors: ReadonlyArray<Error> }) {
-                log.error(`Request encountered error ${errors.map((it) => it.message).join(`, `)}`);
+                log.error(`Request encountered error ${errors.map((it) => it.message).join(`, `)}`, {
+                    trace: errors.map((it) => it.stack),
+                });
             },
         };
     },

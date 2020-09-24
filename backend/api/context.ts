@@ -1,4 +1,5 @@
 import { createLogger, format, Logger, transports } from "winston";
+import { AuthenticationError } from "apollo-server";
 import { Request } from "express";
 import { promises as fsp } from "fs";
 
@@ -21,6 +22,7 @@ export type StaticContext = Readonly<{
 
 export type Context = StaticContext & {
     user?: AuthenticatedUser;
+    assertUser: () => AuthenticatedUser;
 };
 
 export const createStaticContext = async (): Promise<StaticContext> => {
@@ -64,6 +66,12 @@ export const createDynamicContext = (staticContext: StaticContext) => async ({
     const user = await extractUserFromRequest(req, staticContext.authService);
     return {
         ...staticContext,
+        assertUser: () => {
+            if (!user) {
+                throw new AuthenticationError("Authentication required");
+            }
+            return user;
+        },
         user,
     };
 };

@@ -3,6 +3,7 @@ import { DocumentNode } from "graphql";
 import { ApolloServer } from "apollo-server";
 import { loadTypedefs } from "@graphql-tools/load";
 import { GraphQLFileLoader } from "@graphql-tools/graphql-file-loader";
+import { ValidationError } from "joi";
 
 import { port } from "../consts";
 import { resolvers } from "./resolvers";
@@ -24,6 +25,12 @@ const init = async () => {
                 return {
                     message: originalError.message,
                     extensions: { code: originalError.code, paths: originalError.paths },
+                };
+            }
+            if (originalError instanceof ValidationError) {
+                return {
+                    message: originalError.message,
+                    extensions: { code: "VALIDATION_ERROR", paths: originalError.details.map((it) => it.path).flat() },
                 };
             }
             return existingErrorDescription;

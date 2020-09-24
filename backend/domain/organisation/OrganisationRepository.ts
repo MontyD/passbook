@@ -12,17 +12,16 @@ export enum DataType {
 }
 
 export interface DataToCapture {
-    [key: string]: {
-        label: string;
-        type: DataType;
-    };
+    name: string;
+    label: string;
+    type: DataType;
 }
 
 export interface OrganisationEntity {
     id: string;
     name: string;
     status: OrganisationStatus;
-    dataToCapture: DataToCapture;
+    dataToCapture: DataToCapture[];
 }
 export type OrganisationCreate = Omit<OrganisationEntity, "id">;
 export type OrganisationUpdate = Partial<OrganisationEntity> & { id: string };

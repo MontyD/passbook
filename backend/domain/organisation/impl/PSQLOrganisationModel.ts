@@ -5,7 +5,7 @@ export class OrganisationModel extends Model<OrganisationEntity, OrganisationCre
     public id!: string;
     public status!: OrganisationStatus;
     public name!: string;
-    public dataToCapture!: DataToCapture;
+    public dataToCapture!: DataToCapture[];
 
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
@@ -24,6 +24,7 @@ export const organisationModelFieldDefs = {
     name: {
         type: DataTypes.STRING,
         allowNull: false,
+        unique: true,
     },
     dataToCapture: {
         type: DataTypes.JSON,

@@ -55,7 +55,6 @@ export const createPSQLRepository = <
                         e.errors.map((it) => it.path)
                     );
                 }
-                console.log(e);
                 throw e;
             }
         }

@@ -2,7 +2,7 @@ import { Logger } from "winston";
 import { hash } from "bcrypt";
 import Joi from "joi";
 
-import { UserCreate, AuthenticatedUser, UserRepository, UserStatus } from "./UserRepository";
+import { UserCreate, AuthenticatedUser, UserRepository, UserStatus, UserEntity } from "./UserRepository";
 import {
     allPermissions,
     permissionsSchema,
@@ -38,10 +38,10 @@ export class UserService {
     private constructor(private readonly userRepo: UserRepository, private readonly log: Logger) {}
 
     @requiresPermission(AvailablePermissions.ADMINISTER_USERS)
-    public async createUser(user: UserCreate, creatingUser?: AuthenticatedUser) {
+    public async createUser(user: UserCreate, creatingUser: AuthenticatedUser) {
         const { all: creatingUserHasAll, organisations: creatingUserOrganisations } = getPermission(
             AvailablePermissions.ADMINISTER_USERS,
-            creatingUser!.permissions
+            creatingUser.permissions
         );
         const validatedUser: UserCreate = await userSchema.validateAsync({
             ...user,
@@ -64,19 +64,22 @@ export class UserService {
     }
 
     @requiresPermission(AvailablePermissions.ADMINISTER_USERS)
-    public async getUsers(paginationOptions: PaginationOptions, requestingUser?: AuthenticatedUser) {
+    public async getUsers(
+        paginationOptions: PaginationOptions,
+        fields?: Array<keyof UserEntity>,
+        requestingUser?: AuthenticatedUser
+    ) {
         const { all, organisations } = getPermission(
             AvailablePermissions.ADMINISTER_USERS,
             requestingUser!.permissions
         );
-        console.log(this);
         if (all) {
-            return this.userRepo.get({}, paginationOptions);
+            return this.userRepo.get({}, paginationOptions, fields);
         }
         if (!organisations || organisations.length === 0) {
             throw new DescriptiveError("INVALID_PERMISSIONS", "Permissions not valid to fetch users");
         }
-        return this.userRepo.get({ organisation: organisations }, paginationOptions);
+        return this.userRepo.get({ organisation: organisations }, paginationOptions, fields);
     }
 
     private hashPassword(password: string) {

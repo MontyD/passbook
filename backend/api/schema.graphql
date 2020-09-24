@@ -3,10 +3,12 @@ type Mutation {
     refreshToken(refreshId: ID!, refreshToken: String!): Token!
 
     createUser(userCreate: UserCreate!): User!
+    createOrganisation(organisationCreate: OrganisationCreate!): Organisation!
 }
 
 type Query {
     listUsers(limit: Int!, offset: Int): UserList!
+    listOrganisations(limit: Int!, offset: Int): OrganisationList!
 }
 
 type Token {
@@ -70,4 +72,44 @@ input UserCreate {
 type UserList {
     total: Int!
     data: [User!]!
+}
+
+enum OrganisationStatus {
+    ACTIVE
+    LOCKED
+}
+
+enum DataType {
+    FREE_TEXT
+    EMAIL
+    PHONE_NUMBER
+}
+
+type DataToCapture {
+    name: String!
+    label: String!
+    type: DataType!
+}
+
+input DataToCaptureCreate {
+    name: String!
+    label: String!
+    type: DataType!
+}
+
+type Organisation {
+    id: ID!
+    name: String!
+    status: OrganisationStatus!
+    dataToCapture: [DataToCapture!]!
+}
+
+input OrganisationCreate {
+    name: String!
+    dataToCapture: [DataToCaptureCreate!]!
+}
+
+type OrganisationList {
+    total: Int!
+    data: [Organisation!]!
 }
